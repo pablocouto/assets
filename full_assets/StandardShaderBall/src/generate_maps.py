@@ -46,12 +46,15 @@ BASE_MAPS       = [
     '_wall_top.png'
 ]
 
-MAP_COLOR1       = '0.625,0.625,0.625'
-MAP_COLOR2       = '0.18,0.18,0.18'
+MAP_COLOR1        = '0.625,0.625,0.625'
+MAP_COLOR2        = '0.18,0.18,0.18'
 
-SSS_BAR_BASE_MAP = str((CWD / '_sss_bars.png').resolve())
-SSS_MAP_COLOR1   = '0.4,0.4,0.4'
-SSS_MAP_COLOR2   = '0.025,0.025,0.025'
+GROUND_MAP_COLOR1 = '0.18,0.18,0.18'
+GROUND_MAP_COLOR2 = '0.04,0.04,0.04'
+
+SSS_BAR_BASE_MAP  = str((CWD / '_sss_bars.png').resolve())
+SSS_MAP_COLOR1    = '0.4,0.4,0.4'
+SSS_MAP_COLOR2    = '0.025,0.025,0.025'
 
 
 def oiio_uv_grid_map(oiio_cmd, tiles=10, resolution=2000, font=UVMAP_FONT, thin_font=UVMAP_THIN_FONT):
@@ -168,8 +171,8 @@ def generate_ground_number_grid():
     for x in range(24,-1,-1):
         oiio_cmd.append(f'{DEST_DIR}/part_{x}.exr')
     oiio_cmd.append(f'--mosaic:pad={padding} 1x25')
-    oiio_cmd.append(f'--colormap {MAP_COLOR2},{MAP_COLOR1}')
-    oiio_cmd.append(f'--pattern constant:color={MAP_COLOR2} "{{TOP.width+2*1}}x{{TOP.height+2*1}}" "{{TOP.nchannels}}" --paste "+1+1" ')
+    oiio_cmd.append(f'--colormap {GROUND_MAP_COLOR2},{GROUND_MAP_COLOR1}')
+    oiio_cmd.append(f'--pattern constant:color={GROUND_MAP_COLOR2} "{{TOP.width+2*1}}x{{TOP.height+2*1}}" "{{TOP.nchannels}}" --paste "+1+1" ')
     oiio_cmd.append(f'--ch R,G,B -o:type={EXR_TYPE} {DEST_DIR}/ground.ACEScg.exr')
     Popen(' '.join(oiio_cmd), shell=True).wait()
 
