@@ -54,10 +54,6 @@ SSS_MAP_COLOR1   = '0.4,0.4,0.4'
 SSS_MAP_COLOR2   = '0.025,0.025,0.025'
 
 
-#
-# Generate UV Grid
-#
-
 def oiio_uv_grid_map(oiio_cmd, tiles=10, resolution=2000, font=UVMAP_FONT, thin_font=UVMAP_THIN_FONT):
     """
     Appends the necessary parts to the cmd list to generate the alternating grid.
@@ -116,107 +112,117 @@ def oiio_uv_grid_map(oiio_cmd, tiles=10, resolution=2000, font=UVMAP_FONT, thin_
 
     return oiio_cmd
 
+def generate_uv_grid():
+    """
+    Generate UV Grid
+    """
 
-# Call the grid function to build that part of the oiiotool command
-oiio_cmd = oiio_uv_grid_map([f'{OIIOTOOL}'], tiles=UVMAP_TILES, resolution=UVMAP_RES)
+    # Call the grid function to build that part of the oiiotool command
+    oiio_cmd = oiio_uv_grid_map([f'{OIIOTOOL}'], tiles=UVMAP_TILES, resolution=UVMAP_RES)
 
-# Creates the background color grid by making a small images, and scaling it up
-blue   = '0.0,0.0,0.5'
-green  = '0.0,0.5,0.0'
-yellow = '0.5,0.5,0.0'
-red    = '0.5,0.0,0.0'
-oiio_cmd.append(f'--pattern fill:bottomleft={blue}:topleft={green}:topright={yellow}:bottomright={red} {UVMAP_TILES}x{UVMAP_TILES} 3')
+    # Creates the background color grid by making a small images, and scaling it up
+    blue   = '0.0,0.0,0.5'
+    green  = '0.0,0.5,0.0'
+    yellow = '0.5,0.5,0.0'
+    red    = '0.5,0.0,0.0'
+    oiio_cmd.append(f'--pattern fill:bottomleft={blue}:topleft={green}:topright={yellow}:bottomright={red} {UVMAP_TILES}x{UVMAP_TILES} 3')
 
-print("Generating UV Grid...", end='', flush=True)
+    print("Generating UV Grid...", end='', flush=True)
 
-# The '--over' overlays the mosaic onto the colour grid
-oiio_cmd.append(f'--resize:filter=box {UVMAP_RES}x{UVMAP_RES} --ch R,G,B,A=1.0 --over')
-oiio_cmd.append(f'--ch R,G,B -o:type={EXR_TYPE} {DEST_DIR}/uvgrid.exr')
+    # The '--over' overlays the mosaic onto the colour grid
+    oiio_cmd.append(f'--resize:filter=box {UVMAP_RES}x{UVMAP_RES} --ch R,G,B,A=1.0 --over')
+    oiio_cmd.append(f'--ch R,G,B -o:type={EXR_TYPE} {DEST_DIR}/uvgrid.exr')
 
-Popen(' '.join(oiio_cmd), shell=True).wait()
-
-print("done.")
-
-
-#
-# Ground Number Grid
-#
-
-print("Generating Number Grid", end='', flush=True)
-
-padding  = 2
-tileres  = 298
-fontsize = 110
-white    = '1.0,1.0,1.0'
-black    = '0.0,0.0,0.0'
-
-# Split the initial images into rows, as Popen() doesn't allow the super-long oiiotool command, shell=True).wait()
-for x in range(24,-1,-1):
-    oiio_cmd = [f'{OIIOTOOL}']
-    for i in range(x*25+1,x*25+26):
-        oiio_cmd.append(f'--pattern constant:color={white},1.0 {tileres}x{tileres} 4')
-        number = str(i).zfill(3)
-        oiio_cmd.append(f'--text:x={{TOP.width*0.5}}:y={{TOP.height*0.5}}:color={black},1.0:xalign=center:yalign=center:font={NUMBER_FONT}:size={fontsize} "{number}"')
-    oiio_cmd.append(f'--mosaic:pad={padding} 25x1')
-    oiio_cmd.append(f'--ch R,G,B -o:type={EXR_TYPE} {DEST_DIR}/part_{x}.exr')
-    # Status update
-    print(".", end='', flush=True)
     Popen(' '.join(oiio_cmd), shell=True).wait()
 
-# Merge the parts, and apply the color map
-oiio_cmd = [f'{OIIOTOOL}']
-for x in range(24,-1,-1):
-    oiio_cmd.append(f'{DEST_DIR}/part_{x}.exr')
-oiio_cmd.append(f'--mosaic:pad={padding} 1x25')
-oiio_cmd.append(f'--colormap {MAP_COLOR2},{MAP_COLOR1}')
-oiio_cmd.append(f'--pattern constant:color={MAP_COLOR2} "{{TOP.width+2*1}}x{{TOP.height+2*1}}" "{{TOP.nchannels}}" --paste "+1+1" ')
-oiio_cmd.append(f'--ch R,G,B -o:type={EXR_TYPE} {DEST_DIR}/ground.ACEScg.exr')
-Popen(' '.join(oiio_cmd), shell=True).wait()
+    print("done.")
 
-# Clean-up the temporary part images
-for x in range(0,26):
-    try:
-        os.remove(f'{DEST_DIR}/part_{x}.exr')
-    except:
-        pass
+def generate_ground_number_grid():
+    """
+    Ground Number Grid
+    """
 
-print("done.")
+    print("Generating Number Grid", end='', flush=True)
 
+    padding  = 2
+    tileres  = 298
+    fontsize = 110
+    white    = '1.0,1.0,1.0'
+    black    = '0.0,0.0,0.0'
 
-#
-# Generate SSS Bars Map
-#
+    # Split the initial images into rows, as Popen() doesn't allow the super-long oiiotool command, shell=True).wait()
+    for x in range(24,-1,-1):
+        oiio_cmd = [f'{OIIOTOOL}']
+        for i in range(x*25+1,x*25+26):
+            oiio_cmd.append(f'--pattern constant:color={white},1.0 {tileres}x{tileres} 4')
+            number = str(i).zfill(3)
+            oiio_cmd.append(f'--text:x={{TOP.width*0.5}}:y={{TOP.height*0.5}}:color={black},1.0:xalign=center:yalign=center:font={NUMBER_FONT}:size={fontsize} "{number}"')
+        oiio_cmd.append(f'--mosaic:pad={padding} 25x1')
+        oiio_cmd.append(f'--ch R,G,B -o:type={EXR_TYPE} {DEST_DIR}/part_{x}.exr')
+        # Status update
+        print(".", end='', flush=True)
+        Popen(' '.join(oiio_cmd), shell=True).wait()
 
-print("Generating SSS Bars Map...", end='', flush=True)
-
-oiio_cmd = [f'{OIIOTOOL}']
-oiio_cmd.append(f'{SSS_BAR_BASE_MAP}')
-oiio_cmd.append(f'--colormap {SSS_MAP_COLOR1},{SSS_MAP_COLOR2}')
-oiio_cmd.append(f'--ch R,G,B -o:type={EXR_TYPE} {DEST_DIR}/sss_bars.ACEScg.exr')
-
-Popen(' '.join(oiio_cmd), shell=True).wait()
-
-print("done.")
-
-
-#
-# Convert the SVG-generated Maps to EXR
-#
-
-print("Generating Wall and Emitter Maps", end='', flush=True)
-
-for base_map in BASE_MAPS:
+    # Merge the parts, and apply the color map
     oiio_cmd = [f'{OIIOTOOL}']
-    map_png = (CWD / base_map).resolve()
-    exr_name = base_map.replace('.png','.exr')[1:]
-    oiio_cmd.append(f'-i {map_png}')
-    # We don't need to color map the emitter maps
-    if not 'emitter' in base_map:
-        oiio_cmd.append(f'--colormap {MAP_COLOR1},{MAP_COLOR2}')
-        exr_name = base_map.replace('.png','.ACEScg.exr')[1:]
-    oiio_cmd.append(f'--ch R,G,B -o:type={EXR_TYPE} {DEST_DIR}/{exr_name}')
-    # Status update
-    print(".", end='', flush=True)
+    for x in range(24,-1,-1):
+        oiio_cmd.append(f'{DEST_DIR}/part_{x}.exr')
+    oiio_cmd.append(f'--mosaic:pad={padding} 1x25')
+    oiio_cmd.append(f'--colormap {MAP_COLOR2},{MAP_COLOR1}')
+    oiio_cmd.append(f'--pattern constant:color={MAP_COLOR2} "{{TOP.width+2*1}}x{{TOP.height+2*1}}" "{{TOP.nchannels}}" --paste "+1+1" ')
+    oiio_cmd.append(f'--ch R,G,B -o:type={EXR_TYPE} {DEST_DIR}/ground.ACEScg.exr')
     Popen(' '.join(oiio_cmd), shell=True).wait()
 
-print("done.")
+    # Clean-up the temporary part images
+    for x in range(0,26):
+        try:
+            os.remove(f'{DEST_DIR}/part_{x}.exr')
+        except:
+            pass
+
+    print("done.")
+
+def generate_sss_bars_map():
+    """
+    Generate SSS Bars Map
+    """
+
+    print("Generating SSS Bars Map...", end='', flush=True)
+
+    oiio_cmd = [f'{OIIOTOOL}']
+    oiio_cmd.append(f'{SSS_BAR_BASE_MAP}')
+    oiio_cmd.append(f'--colormap {SSS_MAP_COLOR1},{SSS_MAP_COLOR2}')
+    oiio_cmd.append(f'--ch R,G,B -o:type={EXR_TYPE} {DEST_DIR}/sss_bars.ACEScg.exr')
+
+    Popen(' '.join(oiio_cmd), shell=True).wait()
+
+    print("done.")
+
+def convert_svg_generated_maps():
+    """
+    Convert the SVG-generated Maps to EXR
+    """
+
+    print("Generating Wall and Emitter Maps", end='', flush=True)
+
+    for base_map in BASE_MAPS:
+        oiio_cmd = [f'{OIIOTOOL}']
+        map_png = (CWD / base_map).resolve()
+        exr_name = base_map.replace('.png','.exr')[1:]
+        oiio_cmd.append(f'-i {map_png}')
+        # We don't need to color map the emitter maps
+        if not 'emitter' in base_map:
+            oiio_cmd.append(f'--colormap {MAP_COLOR1},{MAP_COLOR2}')
+            exr_name = base_map.replace('.png','.ACEScg.exr')[1:]
+        oiio_cmd.append(f'--ch R,G,B -o:type={EXR_TYPE} {DEST_DIR}/{exr_name}')
+        # Status update
+        print(".", end='', flush=True)
+        Popen(' '.join(oiio_cmd), shell=True).wait()
+
+    print("done.")
+
+if __name__ == "__main__":
+    generate_uv_grid()
+    generate_ground_number_grid()
+    generate_sss_bars_map()
+    convert_svg_generated_maps()
